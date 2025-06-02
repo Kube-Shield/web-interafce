@@ -1,0 +1,203 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { motion } from 'framer-motion';
+import { Shield, Plus, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import RulesLayout from '@/components/RulesLayout';
+import RuleCard from '@/components/RuleCard';
+import RuleDialog from '@/components/RuleDialog';
+import { useRouter } from 'next/navigation';
+
+export default function OpaRules() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [rules, setRules] = useState([]);
+  const [filteredRules, setFilteredRules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDialog, setShowDialog] = useState(false);
+  const [selectedRule, setSelectedRule] = useState(null);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+  }, [session, status, router]);
+
+  useEffect(() => {
+    if (session) {
+      setTimeout(() => {
+        setRules([
+          {
+            id: 1,
+            name: 'Pod Security Policy',
+            description: 'Enforce pod security standards',
+            rule_content: 'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  input.request.object.spec.containers[_].securityContext.runAsRoot\n  msg := "Containers must not run as root"\n}',
+            created_at: new Date().toISOString()
+          },
+          {
+            id: 2,
+            name: 'Resource Limits',
+            description: 'Ensure resource limits are set',
+            rule_content: 'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  not input.request.object.spec.containers[_].resources.limits\n  msg := "Containers must have resource limits"\n}',
+            created_at: new Date().toISOString()
+          }
+        ]);
+        setLoading(false);
+      }, 1000);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    const filtered = rules.filter(rule =>
+      rule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rule.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredRules(filtered);
+  }, [rules, searchTerm]);
+
+  const handleCreateRule = async (ruleData) => {
+    console.log('Creating OPA rule:', ruleData);
+    setShowDialog(false);
+    setSelectedRule(null);
+  };
+
+  const handleViewRule = (rule) => {
+    alert(`Rule Content:\n\n${rule.rule_content}`);
+  };
+
+  const handleEditRule = (rule) => {
+    setSelectedRule(rule);
+    setShowDialog(true);
+  };
+
+  const handleDeleteRule = async (rule) => {
+    if (confirm(`Are you sure you want to delete "${rule.name}"?`)) {
+      console.log('Delete OPA rule:', rule.id);
+    }
+  };
+
+  if (status === 'loading' || !session) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <RulesLayout
+      title="OPA Rules"
+      description="Create and manage Open Policy Agent rules for Kubernetes admission control and policy enforcement"
+      badgeText="Policy as Code"
+      icon={Shield}
+      iconColor="from-emerald-500 to-emerald-600"
+    >
+      <motion.div
+        className="px-4 sm:px-0"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div 
+          className="flex flex-col sm:flex-row gap-4 mb-8"
+          variants={itemVariants}
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search OPA rules..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-slate-700/50 border-slate-600 text-white placeholder-gray-400"
+            />
+          </div>
+          <Button
+            onClick={() => {
+              setSelectedRule(null);
+              setShowDialog(true);
+            }}
+            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Rule
+          </Button>
+        </motion.div>
+
+        {loading ? (
+          <div className="text-center text-gray-400 py-8">Loading OPA rules...</div>
+        ) : filteredRules.length === 0 ? (
+          <motion.div 
+            className="text-center py-12"
+            variants={itemVariants}
+          >
+            <Shield className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-white mb-2">No OPA rules found</h3>
+            <p className="text-gray-400 mb-6">
+              {searchTerm ? 'Try adjusting your search terms' : 'Create your first OPA rule to get started'}
+            </p>
+            {!searchTerm && (
+              <Button
+                onClick={() => setShowDialog(true)}
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create First Rule
+              </Button>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            variants={containerVariants}
+          >
+            {filteredRules.map((rule, index) => (
+              <motion.div key={rule.id} variants={itemVariants}>
+                <RuleCard
+                  rule={rule}
+                  onView={handleViewRule}
+                  onEdit={handleEditRule}
+                  onDelete={handleDeleteRule}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </motion.div>
+
+      <RuleDialog
+        isOpen={showDialog}
+        onClose={() => {
+          setShowDialog(false);
+          setSelectedRule(null);
+        }}
+        onSave={handleCreateRule}
+        rule={selectedRule}
+        title={selectedRule ? "Edit OPA Rule" : "Create OPA Rule"}
+        ruleType="opa"
+      />
+    </RulesLayout>
+  );
+}
