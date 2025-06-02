@@ -13,6 +13,7 @@
     "db:reset": "knex migrate:rollback --all && knex migrate:latest && knex seed:run"
   },
   "dependencies": {
+    "@kubernetes/client-node": "^1.3.0",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-navigation-menu": "^1.2.13",
     "@radix-ui/react-slot": "^1.2.3",

@@ -68,10 +68,7 @@ export default function OpaRules() {
             name: "Resource Limits",
             description:
               "Requires containers to have memory and CPU limits set",
-            manifests: {
-              constraintTemplate: "/rules/1/constrainttemplate.yaml",
-              constraint: "/rules/1/constraint.yaml",
-            },
+            rule_content: "",
             created_at: new Date().toISOString(),
             status: "inactive",
           },
@@ -99,10 +96,7 @@ export default function OpaRules() {
             name: "Priviliged Container",
             description:
               "Controls the ability of any container to enable privileged mode",
-            manifests: {
-              constraintTemplate: "/rules/5/constrainttemplate.yaml",
-              constraint: "/rules/5/constraint.yaml",
-            },
+            rule_content: "",
             created_at: new Date().toISOString(),
             status: "inactive",
           },
