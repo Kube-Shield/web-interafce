@@ -1,14 +1,14 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { motion } from 'framer-motion';
-import { Shield, Plus, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import RulesLayout from '@/components/RulesLayout';
-import RuleCard from '@/components/RuleCard';
-import RuleDialog from '@/components/RuleDialog';
-import { useRouter } from 'next/navigation';
+"use client";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
+import { Shield, Plus, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import RulesLayout from "@/components/RulesLayout";
+import RuleCard from "@/components/RuleCard";
+import RuleDialog from "@/components/RuleDialog";
+import { useRouter } from "next/navigation";
 
 export default function OpaRules() {
   const { data: session, status } = useSession();
@@ -16,7 +16,7 @@ export default function OpaRules() {
   const [rules, setRules] = useState([]);
   const [filteredRules, setFilteredRules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
 
@@ -25,9 +25,9 @@ export default function OpaRules() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
-      }
-    }
+        staggerChildren: 0.1,
+      },
+    },
   };
 
   const itemVariants = {
@@ -37,15 +37,15 @@ export default function OpaRules() {
       opacity: 1,
       transition: {
         type: "spring",
-        stiffness: 100
-      }
-    }
+        stiffness: 100,
+      },
+    },
   };
 
   useEffect(() => {
-    if (status === 'loading') return;
+    if (status === "loading") return;
     if (!session) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
   }, [session, status, router]);
@@ -56,18 +56,74 @@ export default function OpaRules() {
         setRules([
           {
             id: 1,
-            name: 'Pod Security Policy',
-            description: 'Enforce pod security standards',
-            rule_content: 'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  input.request.object.spec.containers[_].securityContext.runAsRoot\n  msg := "Containers must not run as root"\n}',
-            created_at: new Date().toISOString()
+            name: "Privilige Escalation",
+            description: "Controls restricting escalation to root privileges",
+            rule_content:
+              'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  input.request.object.spec.containers[_].securityContext.runAsRoot\n  msg := "Containers must not run as root"\n}',
+            created_at: new Date().toISOString(),
+            status: "inactive",
           },
           {
             id: 2,
-            name: 'Resource Limits',
-            description: 'Ensure resource limits are set',
-            rule_content: 'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  not input.request.object.spec.containers[_].resources.limits\n  msg := "Containers must have resource limits"\n}',
-            created_at: new Date().toISOString()
-          }
+            name: "Resource Limits",
+            description:
+              "Requires containers to have memory and CPU limits set",
+            manifests: {
+              constraintTemplate: "/rules/1/constrainttemplate.yaml",
+              constraint: "/rules/1/constraint.yaml",
+            },
+            created_at: new Date().toISOString(),
+            status: "inactive",
+          },
+          {
+            id: 3,
+            name: "Allowed Repositories",
+            description:
+              "Requires container images to begin with a string from the specified list",
+            rule_content:
+              'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  not input.request.object.spec.containers[_].resources.limits\n  msg := "Containers must have resource limits"\n}',
+            created_at: new Date().toISOString(),
+            status: "inactive",
+          },
+          {
+            id: 4,
+            name: "Capabilities",
+            description: "Controls Linux capabilities on containers",
+            rule_content:
+              'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  not input.request.object.spec.containers[_].resources.limits\n  msg := "Containers must have resource limits"\n}',
+            created_at: new Date().toISOString(),
+            status: "inactive",
+          },
+          {
+            id: 5,
+            name: "Priviliged Container",
+            description:
+              "Controls the ability of any container to enable privileged mode",
+            manifests: {
+              constraintTemplate: "/rules/5/constrainttemplate.yaml",
+              constraint: "/rules/5/constraint.yaml",
+            },
+            created_at: new Date().toISOString(),
+            status: "inactive",
+          },
+          {
+            id: 6,
+            name: "Required Labels",
+            description: "Requires resources to contain specified labels",
+            rule_content:
+              'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  not input.request.object.spec.containers[_].resources.limits\n  msg := "Containers must have resource limits"\n}',
+            created_at: new Date().toISOString(),
+            status: "inactive",
+          },
+          {
+            id: 7,
+            name: "Seccomp",
+            description: "Controls the seccomp profile used by containers",
+            rule_content:
+              'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  not input.request.object.spec.containers[_].resources.limits\n  msg := "Containers must have resource limits"\n}',
+            created_at: new Date().toISOString(),
+            status: "inactive",
+          },
         ]);
         setLoading(false);
       }, 1000);
@@ -75,15 +131,16 @@ export default function OpaRules() {
   }, [session]);
 
   useEffect(() => {
-    const filtered = rules.filter(rule =>
-      rule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rule.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const filtered = rules.filter(
+      (rule) =>
+        rule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        rule.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredRules(filtered);
   }, [rules, searchTerm]);
 
   const handleCreateRule = async (ruleData) => {
-    console.log('Creating OPA rule:', ruleData);
+    console.log("Creating OPA rule:", ruleData);
     setShowDialog(false);
     setSelectedRule(null);
   };
@@ -92,18 +149,32 @@ export default function OpaRules() {
     alert(`Rule Content:\n\n${rule.rule_content}`);
   };
 
-  const handleEditRule = (rule) => {
-    setSelectedRule(rule);
-    setShowDialog(true);
+  const handleApplyRule = async (rule) => {
+    try {
+      const res = await fetch("/api/apply-rule", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(rule),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to apply rule");
+
+      alert(`Rule "${rule.name}" applied successfully!`);
+    } catch (err) {
+      alert("Error applying rule: " + err.message);
+    }
   };
 
   const handleDeleteRule = async (rule) => {
     if (confirm(`Are you sure you want to delete "${rule.name}"?`)) {
-      console.log('Delete OPA rule:', rule.id);
+      console.log("Delete OPA rule:", rule.id);
     }
   };
 
-  if (status === 'loading' || !session) {
+  if (status === "loading" || !session) {
     return <div>Loading...</div>;
   }
 
@@ -121,7 +192,7 @@ export default function OpaRules() {
         initial="hidden"
         animate="visible"
       >
-        <motion.div 
+        <motion.div
           className="flex flex-col sm:flex-row gap-4 mb-8"
           variants={itemVariants}
         >
@@ -147,16 +218,19 @@ export default function OpaRules() {
         </motion.div>
 
         {loading ? (
-          <div className="text-center text-gray-400 py-8">Loading OPA rules...</div>
+          <div className="text-center text-gray-400 py-8">
+            Loading OPA rules...
+          </div>
         ) : filteredRules.length === 0 ? (
-          <motion.div 
-            className="text-center py-12"
-            variants={itemVariants}
-          >
+          <motion.div className="text-center py-12" variants={itemVariants}>
             <Shield className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-2">No OPA rules found</h3>
+            <h3 className="text-lg font-medium text-white mb-2">
+              No OPA rules found
+            </h3>
             <p className="text-gray-400 mb-6">
-              {searchTerm ? 'Try adjusting your search terms' : 'Create your first OPA rule to get started'}
+              {searchTerm
+                ? "Try adjusting your search terms"
+                : "Create your first OPA rule to get started"}
             </p>
             {!searchTerm && (
               <Button
@@ -169,7 +243,7 @@ export default function OpaRules() {
             )}
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             variants={containerVariants}
           >
@@ -178,7 +252,7 @@ export default function OpaRules() {
                 <RuleCard
                   rule={rule}
                   onView={handleViewRule}
-                  onEdit={handleEditRule}
+                  onEdit={handleApplyRule}
                   onDelete={handleDeleteRule}
                 />
               </motion.div>
