@@ -9,6 +9,7 @@ import RulesLayout from "@/components/RulesLayout";
 import RuleCard from "@/components/RuleCard";
 import RuleDialog from "@/components/RuleDialog";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function OpaRules() {
   const { data: session, status } = useSession();
@@ -151,8 +152,31 @@ export default function OpaRules() {
   };
 
   const handleDeleteRule = async (rule) => {
-    if (confirm(`Are you sure you want to delete "${rule.name}"?`)) {
-      console.log("Delete OPA rule:", rule.id);
+    const confirmDelete = window.confirm(`Delete "${rule.name}"?`);
+    if (!confirmDelete) return;
+
+    const deleteToast = toast.loading(`Deleting "${rule.name}"...`);
+
+    try {
+      const res = await fetch("/api/opa/delete-rule", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: rule.name }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to delete rule");
+
+      toast.success(`Rule "${rule.name}" deleted successfully!`, {
+        id: deleteToast,
+      });
+
+      // Update the rule status locally (optional depending on state management)
+      rule.status = "inactive";
+    } catch (err) {
+      toast.error("Error deleting rule: " + err.message, { id: deleteToast });
     }
   };
 
@@ -193,6 +217,7 @@ export default function OpaRules() {
               setShowDialog(true);
             }}
             className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
+            disabled
           >
             <Plus className="w-4 h-4 mr-2" />
             Create Rule

@@ -37,7 +37,13 @@ export default function RuleCard({ rule, onView, onEdit, onDelete }) {
                 {rule.description || "No description provided"}
               </CardDescription>
             </div>
-            <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+            <Badge
+              className={` ${
+                rule.status === "active"
+                  ? "bg-green-500/20 text-green-300 border-green-500/30"
+                  : "bg-red-500/20 text-red-300 border-red-500/30"
+              }`}
+            >
               {rule.status}
             </Badge>
           </div>

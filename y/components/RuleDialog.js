@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { X, Save, Plus } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function RuleDialog({
   isOpen,
@@ -37,6 +38,8 @@ export default function RuleDialog({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const toastId = toast.loading("Applying rule...");
+
     try {
       const res = await fetch("/api/opa/apply-rule", {
         method: "POST",
@@ -45,22 +48,23 @@ export default function RuleDialog({
         },
         body: JSON.stringify({
           ...formData,
-          name: rule?.name || "", // ensure name is included
+          name: rule?.name || "",
         }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        alert("Rule applied successfully!");
+        toast.success("Rule applied successfully!", { id: toastId });
         onClose();
+        rule.status = "active";
       } else {
+        toast.error(`Failed: ${data.error}`, { id: toastId });
         console.error("Error:", data.error);
-        alert(`Failed: ${data.error}`);
       }
     } catch (err) {
       console.error(err);
-      alert("Something went wrong!");
+      toast.error("Something went wrong!", { id: toastId });
     }
   };
 
