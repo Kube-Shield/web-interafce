@@ -65,7 +65,7 @@ export default function OpaRules() {
           },
           {
             id: 2,
-            name: "Resource Limits",
+            name: "Resource-Limits",
             description:
               "Requires containers to have memory and CPU limits set",
             rule_content: "",
@@ -93,7 +93,7 @@ export default function OpaRules() {
           },
           {
             id: 5,
-            name: "Priviliged Container",
+            name: "Priviliged",
             description:
               "Controls the ability of any container to enable privileged mode",
             rule_content: "",
@@ -145,7 +145,7 @@ export default function OpaRules() {
 
   const handleApplyRule = async (rule) => {
     try {
-      const res = await fetch("/api/apply-rule", {
+      const res = await fetch("/api/opa/apply-rule", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
