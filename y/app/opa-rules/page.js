@@ -58,8 +58,6 @@ export default function OpaRules() {
             id: 1,
             name: "Privilige Escalation",
             description: "Controls restricting escalation to root privileges",
-            rule_content:
-              'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  input.request.object.spec.containers[_].securityContext.runAsRoot\n  msg := "Containers must not run as root"\n}',
             created_at: new Date().toISOString(),
             status: "inactive",
           },
@@ -68,7 +66,6 @@ export default function OpaRules() {
             name: "Resource-Limits",
             description:
               "Requires containers to have memory and CPU limits set",
-            rule_content: "",
             created_at: new Date().toISOString(),
             status: "inactive",
           },
@@ -77,8 +74,6 @@ export default function OpaRules() {
             name: "Allowed Repositories",
             description:
               "Requires container images to begin with a string from the specified list",
-            rule_content:
-              'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  not input.request.object.spec.containers[_].resources.limits\n  msg := "Containers must have resource limits"\n}',
             created_at: new Date().toISOString(),
             status: "inactive",
           },
@@ -86,8 +81,6 @@ export default function OpaRules() {
             id: 4,
             name: "Capabilities",
             description: "Controls Linux capabilities on containers",
-            rule_content:
-              'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  not input.request.object.spec.containers[_].resources.limits\n  msg := "Containers must have resource limits"\n}',
             created_at: new Date().toISOString(),
             status: "inactive",
           },
@@ -95,8 +88,7 @@ export default function OpaRules() {
             id: 5,
             name: "Priviliged",
             description:
-              "Controls the ability of any container to enable privileged mode",
-            rule_content: "",
+              "Controls the ability of a container to be in privileged mode",
             created_at: new Date().toISOString(),
             status: "inactive",
           },
@@ -104,8 +96,6 @@ export default function OpaRules() {
             id: 6,
             name: "Required Labels",
             description: "Requires resources to contain specified labels",
-            rule_content:
-              'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  not input.request.object.spec.containers[_].resources.limits\n  msg := "Containers must have resource limits"\n}',
             created_at: new Date().toISOString(),
             status: "inactive",
           },
@@ -113,8 +103,6 @@ export default function OpaRules() {
             id: 7,
             name: "Seccomp",
             description: "Controls the seccomp profile used by containers",
-            rule_content:
-              'package kubernetes.admission\n\ndefault deny = false\n\ndeny[msg] {\n  not input.request.object.spec.containers[_].resources.limits\n  msg := "Containers must have resource limits"\n}',
             created_at: new Date().toISOString(),
             status: "inactive",
           },
@@ -246,7 +234,10 @@ export default function OpaRules() {
                 <RuleCard
                   rule={rule}
                   onView={handleViewRule}
-                  onEdit={handleApplyRule}
+                  onEdit={() => {
+                    setSelectedRule(rule);
+                    setShowDialog(true);
+                  }}
                   onDelete={handleDeleteRule}
                 />
               </motion.div>
@@ -261,7 +252,6 @@ export default function OpaRules() {
           setShowDialog(false);
           setSelectedRule(null);
         }}
-        onSave={handleCreateRule}
         rule={selectedRule}
         title={selectedRule ? "Edit OPA Rule" : "Create OPA Rule"}
         ruleType="opa"

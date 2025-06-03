@@ -7,12 +7,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const rule = req.body;
+  const { name, cpu, memory, namespace } = req.body;
 
-  const templateFile = `${rule.name
+  const templateFile = `${name
     .toLowerCase()
     .replace(/\s+/g, "-")}-template.yaml`;
-  const constraintFile = `${rule.name
+  const constraintFile = `${name
     .toLowerCase()
     .replace(/\s+/g, "-")}-constraint.yaml`;
 
@@ -35,18 +35,36 @@ export default async function handler(req, res) {
       throw new Error("One or both YAML files not found.");
     }
 
+    // Read the template YAML file as a string
+    let constraintContent = fs.readFileSync(constraintPath, "utf8");
+
+    // Replace placeholders
+    constraintContent = constraintContent
+      .replace("${CPU_LIMIT}", cpu)
+      .replace("${MEMORY_LIMIT}", memory)
+      .replace("${NAMESPACE}", namespace);
+
+    // Write the modified content to a temporary file
+    const tmpConstraintPath = path.join(
+      process.cwd(),
+      "public",
+      "templates",
+      `tmp-${constraintFile}`
+    );
+    fs.writeFileSync(tmpConstraintPath, constraintContent, "utf8");
+
     // Run kubectl apply for each file
     const result1 = execSync(`kubectl apply -f "${templatePath}"`, {
       encoding: "utf-8",
     });
-    const result2 = execSync(`kubectl apply -f "${constraintPath}"`, {
+    const result2 = execSync(`kubectl apply -f "${tmpConstraintPath}"`, {
       encoding: "utf-8",
     });
 
     console.log("kubectl results:", result1, result2);
 
     res.status(200).json({
-      message: `Successfully applied rule: ${rule.name}`,
+      message: `Successfully applied rule: ${name}`,
       output: [result1, result2],
     });
   } catch (error) {

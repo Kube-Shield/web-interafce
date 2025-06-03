@@ -1,31 +1,67 @@
-'use client';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Save, Plus } from 'lucide-react';
+"use client";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { X, Save, Plus } from "lucide-react";
 
-export default function RuleDialog({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  rule, 
-  title = "Create Rule",
-  ruleType = "falco" 
+export default function RuleDialog({
+  isOpen,
+  onClose,
+  rule,
+  title = "Apply Constraint Rule",
 }) {
   const [formData, setFormData] = useState({
-    name: rule?.name || '',
-    description: rule?.description || '',
-    rule_content: rule?.rule_content || ''
+    name: rule?.name || "",
+    description: rule?.description || "",
+    cpu: "",
+    memory: "",
+    namespace: "",
   });
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
-    setFormData({ name: '', description: '', rule_content: '' });
+
+    try {
+      const res = await fetch("/api/opa/apply-rule", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          name: rule?.name || "", // ensure name is included
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Rule applied successfully!");
+        onClose();
+      } else {
+        console.error("Error:", data.error);
+        alert(`Failed: ${data.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong!");
+    }
   };
 
   if (!isOpen) return null;
@@ -36,7 +72,7 @@ export default function RuleDialog({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-2xl"
+        className="w-full max-w-xl"
       >
         <Card className="bg-gradient-to-br from-slate-800/95 to-slate-900/95 border-purple-500/30 backdrop-blur-xl">
           <CardHeader>
@@ -44,7 +80,7 @@ export default function RuleDialog({
               <div>
                 <CardTitle className="text-white text-xl">{title}</CardTitle>
                 <CardDescription className="text-gray-400">
-                  {rule ? 'Edit existing rule' : `Create a new ${ruleType} rule`}
+                  Fill the constraint values
                 </CardDescription>
               </div>
               <Button
@@ -57,43 +93,64 @@ export default function RuleDialog({
               </Button>
             </div>
           </CardHeader>
+
           <CardContent>
+            <div className="mb-6 space-y-1 text-center">
+              <h2 className="text-2xl font-semibold">
+                <span className="bg-gradient-to-r from-purple-500 to-cyan-500 bg-clip-text text-transparent">
+                  {rule?.name || "Untitled Rule"}
+                </span>
+              </h2>
+              <p className="text-gray-400 text-lg">
+                {rule?.description || "No description provided."}
+              </p>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-white">Rule Name</Label>
+                <Label htmlFor="cpu" className="text-white">
+                  CPU Limit
+                </Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter rule name"
+                  id="cpu"
+                  name="cpu"
+                  placeholder="e.g. 500m"
+                  value={formData.cpu}
+                  onChange={handleChange}
                   className="bg-slate-700/50 border-slate-600 text-white placeholder-gray-400"
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-white">Description</Label>
+                <Label htmlFor="memory" className="text-white">
+                  Memory Limit
+                </Label>
                 <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Enter rule description"
+                  id="memory"
+                  name="memory"
+                  placeholder="e.g. 256Mi"
+                  value={formData.memory}
+                  onChange={handleChange}
                   className="bg-slate-700/50 border-slate-600 text-white placeholder-gray-400"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="rule_content" className="text-white">Rule Content</Label>
-                <Textarea
-                  id="rule_content"
-                  value={formData.rule_content}
-                  onChange={(e) => setFormData({ ...formData, rule_content: e.target.value })}
-                  placeholder={`Enter ${ruleType} rule content`}
-                  className="bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 min-h-[200px] font-mono text-sm"
                   required
                 />
               </div>
-              
+
+              <div className="space-y-2">
+                <Label htmlFor="namespace" className="text-white">
+                  Namespace
+                </Label>
+                <Input
+                  id="namespace"
+                  name="namespace"
+                  placeholder="e.g. opa-test"
+                  value={formData.namespace}
+                  onChange={handleChange}
+                  className="bg-slate-700/50 border-slate-600 text-white placeholder-gray-400"
+                  required
+                />
+              </div>
+
               <div className="flex justify-end space-x-3">
                 <Button
                   type="button"
@@ -107,8 +164,8 @@ export default function RuleDialog({
                   type="submit"
                   className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white"
                 >
-                  {rule ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                  {rule ? 'Update Rule' : 'Create Rule'}
+                  <Plus className="w-4 h-4 mr-2" />
+                  Apply Rule
                 </Button>
               </div>
             </form>
